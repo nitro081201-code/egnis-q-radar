@@ -4,14 +4,16 @@ import {
   extractRegion,
   maskAndHashLicenseNo,
   normalizeDispositionType,
+  parseDateLoose,
+  parseViltcn,
   parseYyyymmdd,
 } from "./util";
 
 // 식품안전나라(foodsafetykorea.go.kr) Open API — 행정처분결과(식품접객업), 서비스ID I2630.
 // data.go.kr(15058429)에서는 LINK형으로 이 API로 연결되며, 인증키는 공공데이터포털이 아니라
 // 식품안전나라에서 별도로 발급받아야 한다 (docs/data-sources.md 참고).
-// ⚠️ 응답 envelope 구조({ I2630: { total_count, row, RESULT } })는 MFDS Open API의
-// 문서화된 공통 패턴을 근거로 작성했으나, 실제 키로 1회 호출해 확정하기 전까지는 미검증 상태다.
+// 응답 envelope 구조 및 필드 형식은 인증 없는 샘플 엔드포인트
+// (openapi.foodsafetykorea.go.kr/api/sample/I2630/json/1/5) 실 응답으로 검증 완료.
 
 const SERVICE_ID = "I2630";
 const PAGE_SIZE = 100;
@@ -59,9 +61,12 @@ function parseRow(raw: RawRow): CollectedRow | null {
   const companyName = raw.PRCSCITYPOINT_BSSHNM?.trim();
   const { masked: licenseNoMasked, hash: licenseNoHash } = maskAndHashLicenseNo(raw.LCNS_NO);
   const dispositionDate = parseYyyymmdd(raw.DSPS_DCSNDT);
-  const publicUntil = parseYyyymmdd(raw.PUBLIC_DT);
+  // PUBLIC_DT는 파라미터 문서상 YYYYMMDD로 안내되어 있으나 실제 응답은
+  // "YYYY-MM-DD HH:MM:SS.s" 타임스탬프로 옴 (샘플 응답으로 확인).
+  const publicUntil = parseDateLoose(raw.PUBLIC_DT);
   const dispositionTypeNormalized = normalizeDispositionType(raw.DSPS_TYPECD_NM);
-  const { score, level } = calcDispositionRisk(dispositionTypeNormalized, raw.VILTCN ?? null);
+  const { date: violationDate, content: violationContent } = parseViltcn(raw.VILTCN);
+  const { score, level } = calcDispositionRisk(dispositionTypeNormalized, violationContent);
 
   const qualityOk = Boolean(companyName && dispositionDate && publicUntil);
 
@@ -76,8 +81,8 @@ function parseRow(raw: RawRow): CollectedRow | null {
     license_no_hash: licenseNoHash,
 
     violation_law: raw.LAWORD_CD_NM ?? null,
-    violation_content: raw.VILTCN ?? null,
-    violation_date: null, // VILTCN에 날짜가 합쳐져 있을 가능성 — 실 응답 확인 후 분리 파싱 추가
+    violation_content: violationContent,
+    violation_date: violationDate,
 
     disposition_type_raw: raw.DSPS_TYPECD_NM ?? null,
     disposition_type_normalized: dispositionTypeNormalized,

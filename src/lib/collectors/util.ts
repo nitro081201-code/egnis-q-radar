@@ -11,6 +11,72 @@ export function parseYyyymmdd(raw: string | undefined | null): string | null {
   return `${y}-${mo}-${d}`;
 }
 
+/**
+ * "YYYYMMDD" 또는 "YYYY-MM-DD HH:MM:SS.s" 둘 다 허용 (I2630 PUBLIC_DT는 후자 형식으로
+ * 옴 — 문서상 파라미터 표는 YYYYMMDD라 했지만 실제 응답은 타임스탬프임, 실 데이터로 확인함)
+ */
+export function parseDateLoose(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, y, mo, d] = isoMatch;
+    const date = new Date(`${y}-${mo}-${d}T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) return null;
+    return `${y}-${mo}-${d}`;
+  }
+  return parseYyyymmdd(trimmed);
+}
+
+/** VILTCN 형식: "(YYYYMMDD)위반내용텍스트" — 실 데이터로 확인된 패턴 */
+export function parseViltcn(raw: string | undefined | null): {
+  date: string | null;
+  content: string | null;
+} {
+  if (!raw) return { date: null, content: null };
+  const m = raw.match(/^\((\d{8})\)([\s\S]*)$/);
+  if (!m) return { date: null, content: raw };
+  return { date: parseYyyymmdd(m[1]), content: m[2].trim() || null };
+}
+
+/**
+ * 회수 API(I0490)의 DISTBTMLMT/MNFDT는 형식이 들쭉날쭉하다 (실 데이터로 확인):
+ * "2027-07-05", "2029.1.30", "제조일로부터 9개월"(날짜 아님), "데이터없음"(값 없음).
+ * 실제 날짜로 확인되는 것만 파싱하고, 나머지는 null로 둔다(추측 계산 금지).
+ */
+export function parseFlexibleDate(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  const dash = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const dot = trimmed.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+  const m = dash ?? dot;
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  const mm = mo.padStart(2, "0");
+  const dd = d.padStart(2, "0");
+  const date = new Date(`${y}-${mm}-${dd}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${y}-${mm}-${dd}`;
+}
+
+const RECALL_GRADE_VALUES = ["1등급", "2등급", "3등급", "미분류"] as const;
+export type RecallGradeNormalized = (typeof RECALL_GRADE_VALUES)[number];
+
+export function normalizeRecallGrade(raw: string | undefined | null): RecallGradeNormalized {
+  if (!raw) return "미분류";
+  const found = RECALL_GRADE_VALUES.find((v) => raw.includes(v));
+  return found ?? "미분류";
+}
+
+/** §5 위험도 점수 공식 (회수) */
+export function calcRecallRisk(
+  grade: RecallGradeNormalized
+): { score: number; level: "critical" | "high" | "medium" | "low" } {
+  const score = { "1등급": 95, "2등급": 70, "3등급": 50, "미분류": 40 }[grade];
+  const level = score >= 80 ? "critical" : score >= 60 ? "high" : score >= 40 ? "medium" : "low";
+  return { score, level };
+}
+
 const SIDO_MAP: Record<string, string> = {
   "서울특별시": "서울",
   "부산광역시": "부산",
