@@ -137,7 +137,8 @@ export default async function BoardPage({
         <select
           name="type"
           defaultValue={type}
-          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+          style={{ colorScheme: "light" }}
+          className="rounded border border-gray-400 bg-white px-2 py-1 text-sm text-black"
         >
           <option value="all">전체</option>
           <option value="disposition">행정처분</option>
@@ -146,7 +147,8 @@ export default async function BoardPage({
         <select
           name="category"
           defaultValue={category}
-          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+          style={{ colorScheme: "light" }}
+          className="rounded border border-gray-400 bg-white px-2 py-1 text-sm text-black"
         >
           <option value="all">전 분야</option>
           <option value="food">식품</option>
@@ -157,7 +159,8 @@ export default async function BoardPage({
         <select
           name="risk"
           defaultValue={risk}
-          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+          style={{ colorScheme: "light" }}
+          className="rounded border border-gray-400 bg-white px-2 py-1 text-sm text-black"
         >
           <option value="all">전체 위험도</option>
           <option value="critical">심각</option>
@@ -170,9 +173,10 @@ export default async function BoardPage({
           name="q"
           defaultValue={q}
           placeholder="업체명·제품명 검색"
-          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black placeholder:text-gray-400 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400"
+          style={{ colorScheme: "light" }}
+          className="rounded border border-gray-400 bg-white px-2 py-1 text-sm text-black placeholder:text-gray-400"
         />
-        <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white dark:bg-white dark:text-black">
+        <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white">
           검색
         </button>
       </form>
