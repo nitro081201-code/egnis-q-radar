@@ -1,16 +1,18 @@
 # 데이터 소스 조사 결과 (Gate 3)
 
-## ⚠️ 중요 발견: 인증키가 하나가 아니다
+## ⚠️ 중요 발견: 인증키가 하나가 아니다 (+ 실키로 검증 완료)
 
 스펙(q-radar-spec-v1.md §2, §4)은 `DATA_GO_KR_API_KEY` 하나로 행정처분 API 4종을 전부
 쓸 수 있다고 가정했지만, 실제로는 **두 종류의 서로 다른 API 게이트웨이**가 섞여 있다.
 
 | 유형 | 게이트웨이 | 인증키 | 해당 소스 |
 |---|---|---|---|
-| A. data.go.kr 자체 호스팅 REST | `apis.data.go.kr/...` | `DATA_GO_KR_API_KEY` (공공데이터포털 활용신청) | #1 식품제조가공업, #2 식품판매업, #6 수입식품 회수·판매중지 (모두 확인됨) |
-| B. 식품안전나라(MFDS) 자체 게이트웨이로 연결(LINK형) | `openapi.foodsafetykorea.go.kr/api/{keyId}/{serviceId}/...` | **별도의 keyId** — foodsafetykorea.go.kr에서 따로 발급 | #3 식품접객업, #5 식품 회수·판매중지 (모두 확인됨) |
+| A. data.go.kr 자체 호스팅 REST | `apis.data.go.kr/...` | `DATA_GO_KR_API_KEY` (공공데이터포털 활용신청) | #6 수입식품 회수·판매중지 확인됨. #1·#2도 REST 엔드포인트는 존재하나, 아래처럼 foodsafetykorea 쪽에서도 별도 제공되는 것으로 확인되어 이쪽은 후순위 |
+| B. 식품안전나라(MFDS) 자체 게이트웨이 | `openapi.foodsafetykorea.go.kr/api/{keyId}/{serviceId}/...` | keyId — foodsafetykorea.go.kr에서 발급, **`FOODSAFETYKOREA_API_KEY`로 실키 발급받아 #3·#5 실제 검증 완료** | #3 식품접객업, #5 식품 회수·판매중지 (필드 매핑·실 데이터 수집 전부 검증됨). 사용자 계정에 "행정처분결과(식품판매업)"·"행정처분결과(식품제조가공업)"도 이미 승인되어 있어 **#1·#2도 이 키 하나로 가능할 가능성 높음** — 정확한 svc_no 확인 중 |
 
-**즉 공공데이터포털 키와 별개로 식품안전나라 Open API 키도 반드시 신청해야 한다.**
+**실키 검증 결과**: `FOODSAFETYKOREA_API_KEY` 하나로 식품접객업 500건, 회수·판매중지 356건을
+실제 프로덕션 DB에 정상 수집 완료 (2026-07-16). `DATA_GO_KR_API_KEY`는 아직 미발급 상태이며,
+#1·#2까지 foodsafetykorea 하나로 해결되면 아예 필요 없어질 수도 있다 (#6만 남을 전망).
 
 ## ✅ 추가 발견: 인증 없는 샘플 엔드포인트로 필드 매핑을 실제 검증함
 
