@@ -176,7 +176,10 @@ export default async function BoardPage({
           style={{ colorScheme: "light" }}
           className="rounded border border-gray-400 bg-white px-2 py-1 text-sm text-black placeholder:text-gray-400"
         />
-        <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white">
+        <button
+          type="submit"
+          className="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+        >
           검색
         </button>
       </form>
