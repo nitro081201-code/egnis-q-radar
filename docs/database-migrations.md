@@ -27,6 +27,8 @@ npx supabase db push
 | `20260716000008_collection_runs_and_partners.sql` | 수집 이력, 협력사 마스터(Phase 3 대비) |
 | `20260716000009_rls_policies.sql` | 전체 테이블 접근권한(RLS) 정책 |
 | `20260716000010_security_hardening.sql` | 자동 보안진단 결과 반영(함수 search_path 고정) |
+| `20260716000011_gate2_security_hardening.sql` | pg_trgm을 extensions 스키마로 이동, 헬퍼 함수 anon/authenticated RPC 권한 회수 시도 |
+| `20260716000012_gate2_security_hardening_fix.sql` | PUBLIC 의사 롤에 남아있던 EXECUTE 권한 회수 보정(§Gate 2 실행 결과 참고) |
 
 ## 롤백 방법
 
@@ -47,3 +49,16 @@ Supabase CLI는 "되돌리기" 명령을 제공하지 않으므로, 되돌려야
    - 동일 `source_key` 중복 삽입 차단 확인
    - 조치(actions) 등록/완료 시 콘텐츠 테이블의 `action_status` 자동 동기화 확인
    - 콘텐츠 삭제 시 `item_tags` orphan 자동 정리 확인
+
+## 실행한 테스트 (Gate 2)
+
+1. **db advisors 재확인**: pg_trgm의 `extension_in_public` 경고 해소 확인 (schema를
+   `extensions`로 이동, 기존 trigram 인덱스는 OID 참조라 영향 없음).
+2. **헬퍼 함수 RPC 노출 축소**: `handle_new_auth_user`(트리거 전용)는 anon/authenticated
+   양쪽 모두 EXECUTE 회수. `is_active_admin`/`is_active_user`/`is_active_editor_or_admin`은
+   RLS 정책 평가에 `authenticated` 실행 권한이 필요하므로 유지하고, `anon`만 회수.
+   최초 REVOKE는 PostgreSQL이 함수 생성 시 기본 부여하는 PUBLIC 의사 롤 권한 때문에
+   무력화되어(`REVOKE ... FROM anon`만으로는 부족) 20260716000012에서 `FROM public` 회수로
+   보정. 재확인 결과 9건 → 3건(모두 `authenticated`의 정상적인 필요 권한)으로 감소, 이는
+   설계상 의도된 잔여 WARN.
+3. **관리자 화면(검수대상 건수)**: `/admin/quarantine` 페이지로 구현 (아래 §admin 참고).
