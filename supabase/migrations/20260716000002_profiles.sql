@@ -47,6 +47,56 @@ create trigger trg_on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_auth_user();
 
+-- ---------------------------------------------------------
+-- RLS 정책에서 반복 사용할 권한 헬퍼 함수
+-- security definer로 만들어 profiles 테이블의 RLS와 순환 참조되지 않게 한다.
+-- ---------------------------------------------------------
+create or replace function is_active_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+      and role = 'admin'
+      and is_active = true
+  );
+$$;
+
+-- "현재 로그인 사용자가 활성 사용자(admin/editor/viewer 무관)인가" 헬퍼
+create or replace function is_active_user()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+      and is_active = true
+  );
+$$;
+
+-- "현재 로그인 사용자가 활성 admin 또는 editor인가" 헬퍼 (데이터 등록/조치 권한)
+create or replace function is_active_editor_or_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+      and role in ('admin', 'editor')
+      and is_active = true
+  );
+$$;
+
 alter table profiles enable row level security;
 
 -- 본인 프로필은 조회 가능, admin은 전체 조회 가능

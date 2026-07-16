@@ -16,50 +16,6 @@ begin
 end;
 $$;
 
--- RLS 정책에서 반복 사용할 "현재 로그인 사용자가 활성 admin인가" 헬퍼
--- security definer로 만들어 profiles 테이블의 RLS와 순환 참조되지 않게 한다.
-create or replace function is_active_admin()
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select exists (
-    select 1 from profiles
-    where id = auth.uid()
-      and role = 'admin'
-      and is_active = true
-  );
-$$;
-
--- "현재 로그인 사용자가 활성 사용자(admin/editor/viewer 무관)인가" 헬퍼
-create or replace function is_active_user()
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select exists (
-    select 1 from profiles
-    where id = auth.uid()
-      and is_active = true
-  );
-$$;
-
--- "현재 로그인 사용자가 활성 admin 또는 editor인가" 헬퍼 (데이터 등록/조치 권한)
-create or replace function is_active_editor_or_admin()
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select exists (
-    select 1 from profiles
-    where id = auth.uid()
-      and role in ('admin', 'editor')
-      and is_active = true
-  );
-$$;
+-- 참고: is_active_admin() / is_active_user() / is_active_editor_or_admin()
+-- 권한 헬퍼 함수는 profiles 테이블을 참조하므로, profiles 테이블 생성
+-- 이후인 20260716000002_profiles.sql 파일에 정의되어 있다.
