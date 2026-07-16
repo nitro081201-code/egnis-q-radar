@@ -9,15 +9,20 @@ import {
   parseYyyymmdd,
 } from "./util";
 
-// 식품안전나라(foodsafetykorea.go.kr) Open API — 행정처분결과(식품접객업), 서비스ID I2630.
-// data.go.kr(15058429)에서는 LINK형으로 이 API로 연결되며, 인증키는 공공데이터포털이 아니라
-// 식품안전나라에서 별도로 발급받아야 한다 (docs/data-sources.md 참고).
-// 응답 envelope 구조 및 필드 형식은 인증 없는 샘플 엔드포인트
-// (openapi.foodsafetykorea.go.kr/api/sample/I2630/json/1/5) 실 응답으로 검증 완료.
+// 식품안전나라(foodsafetykorea.go.kr) Open API — 행정처분결과(전체), 서비스ID I0470.
+// 업종(INDUTY_CD_NM)이 식품제조가공업/식품판매업/식품접객업/수입식품업 등을 전부 포함하는
+// 통합 데이터셋임을 실키로 확인함(2026-07-17, 5,372건, 23개 업종 확인) — 애초 스펙(§2)이
+// 4개로 나눠 생각했던 업종별 API를 이거 하나로 커버 가능해 별도 API 4개를 쫓아다닐 필요가 없다.
+// 응답 envelope/필드 형식은 인증 없는 샘플 엔드포인트로 먼저 검증(I2630과 필드 100% 동일),
+// 이후 실키로 전체 데이터 재검증 완료.
+//
+// ⚠️ total_count가 5천 건대라 90일 증분 수집 전략은 아직 미정 (API가 날짜 "범위" 필터를
+// 지원하지 않고 CHNG_DT 정확히 일치만 지원함 — docs/data-sources.md 참고). 지금은 안전하게
+// MAX_PAGES로 상한만 두고, 매일 갱신분이 상한 안에 들어오는지는 운영 투입 전 재점검 필요.
 
-const SERVICE_ID = "I2630";
+const SERVICE_ID = "I0470";
 const PAGE_SIZE = 100;
-const MAX_PAGES = 5; // 최초 안전장치 — 실제 응답 확인 후 페이지네이션 전략을 재조정할 것
+const MAX_PAGES = 20; // 최초 안전장치(최대 2000건/회) — Vercel 함수 실행시간 제약 고려해 운영 투입 전 재조정할 것
 
 interface RawRow {
   PRCSCITYPOINT_BSSHNM?: string;
@@ -47,12 +52,19 @@ async function fetchPage(apiKey: string, startIdx: number, endIdx: number): Prom
     throw new Error(`${SERVICE_ID} 응답 형식 예상과 다름: ${JSON.stringify(body).slice(0, 300)}`);
   }
   const resultCode = service.RESULT?.CODE;
-  if (resultCode && resultCode !== "INFO-000" && resultCode !== "INFO-200") {
-    // INFO-200: 해당 페이지에 더 이상 데이터 없음(정상 종료 신호로 취급)
+  if (resultCode && resultCode !== "INFO-000") {
     if (resultCode === "INFO-200") return [];
     throw new Error(`${SERVICE_ID} 오류 응답: ${resultCode} ${service.RESULT?.MSG ?? ""}`);
   }
   return service.row ?? [];
+}
+
+/** dispositions.category check 제약: food/health_functional/imported_food/cosmetic */
+function mapCategory(indutyCdNm: string | undefined): "food" | "health_functional" | "imported_food" {
+  const v = indutyCdNm ?? "";
+  if (v.includes("수입식품")) return "imported_food";
+  if (v.includes("건강기능식품")) return "health_functional";
+  return "food";
 }
 
 function parseRow(raw: RawRow): CollectedRow | null {
@@ -72,8 +84,8 @@ function parseRow(raw: RawRow): CollectedRow | null {
 
   return {
     source_key: `${SERVICE_ID}:${raw.DSPSDTLS_SEQ}`,
-    category: "food",
-    business_type: raw.INDUTY_CD_NM ?? "식품접객업",
+    category: mapCategory(raw.INDUTY_CD_NM),
+    business_type: raw.INDUTY_CD_NM ?? null,
     company_name: companyName ?? "",
     region: extractRegion(raw.ADDR),
 
@@ -94,7 +106,7 @@ function parseRow(raw: RawRow): CollectedRow | null {
     risk_level: level,
 
     source_type: "api_mfds",
-    source_url: "https://www.data.go.kr/data/15058429/openapi.do",
+    source_url: "https://www.foodsafetykorea.go.kr/api/openApiInfo.do?svc_no=I0470",
     sanitized_raw_data: {
       // allowlist만 — PRSDNT_NM(대표자명), TEL_NO(전화번호), ADDR 원문은 절대 포함하지 않는다.
       DSPSDTLS_SEQ: raw.DSPSDTLS_SEQ,
@@ -118,9 +130,9 @@ function parseRow(raw: RawRow): CollectedRow | null {
   };
 }
 
-export function createFoodServiceDispositionsCollector(apiKey: string): Collector {
+export function createFoodDispositionsCollector(apiKey: string): Collector {
   return {
-    sourceName: "disposition_food_service",
+    sourceName: "disposition_food",
     table: "dispositions",
     async collect() {
       const rows: CollectedRow[] = [];

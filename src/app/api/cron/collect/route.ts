@@ -1,18 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createFoodDispositionsCollector } from "@/lib/collectors/food-dispositions";
 import { createFoodRecallsCollector } from "@/lib/collectors/food-recalls";
-import { createFoodServiceDispositionsCollector } from "@/lib/collectors/food-service-dispositions";
 import { runCollector } from "@/lib/collectors/run";
 import type { Collector } from "@/lib/collectors/types";
 
 // 소스별 독립 실행: 하나가 실패해도 나머지는 계속 진행한다(§8).
-// 키가 없는 소스는 등록하지 않고 건너뛴다 — 현재는 식품접객업(I2630)·회수판매중지(I0490)만
-// 구현되어 있고, 나머지는 docs/data-sources.md의 필드 매핑 확정 후 추가한다.
+// 키가 없는 소스는 등록하지 않고 건너뛴다 — 현재는 행정처분 통합(I0470)·회수판매중지(I0490)만
+// 구현되어 있고, 나머지(법령·고시 등)는 docs/data-sources.md의 필드 매핑 확정 후 추가한다.
 function buildCollectors(): Collector[] {
   const collectors: Collector[] = [];
 
   const foodsafetyKoreaKey = process.env.FOODSAFETYKOREA_API_KEY;
   if (foodsafetyKoreaKey) {
-    collectors.push(createFoodServiceDispositionsCollector(foodsafetyKoreaKey));
+    collectors.push(createFoodDispositionsCollector(foodsafetyKoreaKey));
     collectors.push(createFoodRecallsCollector(foodsafetyKoreaKey));
   }
 
