@@ -134,19 +134,31 @@ export default async function BoardPage({
       </div>
 
       <form className="mt-6 flex flex-wrap gap-3 border-b pb-4" method="get">
-        <select name="type" defaultValue={type} className="rounded border px-2 py-1 text-sm">
+        <select
+          name="type"
+          defaultValue={type}
+          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+        >
           <option value="all">전체</option>
           <option value="disposition">행정처분</option>
           <option value="recall">회수·판매중지</option>
         </select>
-        <select name="category" defaultValue={category} className="rounded border px-2 py-1 text-sm">
+        <select
+          name="category"
+          defaultValue={category}
+          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+        >
           <option value="all">전 분야</option>
           <option value="food">식품</option>
           <option value="health_functional">건강기능식품</option>
           <option value="imported_food">수입식품</option>
           <option value="cosmetic">화장품</option>
         </select>
-        <select name="risk" defaultValue={risk} className="rounded border px-2 py-1 text-sm">
+        <select
+          name="risk"
+          defaultValue={risk}
+          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+        >
           <option value="all">전체 위험도</option>
           <option value="critical">심각</option>
           <option value="high">높음</option>
@@ -158,9 +170,9 @@ export default async function BoardPage({
           name="q"
           defaultValue={q}
           placeholder="업체명·제품명 검색"
-          className="rounded border px-2 py-1 text-sm"
+          className="rounded border border-gray-300 bg-white px-2 py-1 text-sm text-black placeholder:text-gray-400 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400"
         />
-        <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white">
+        <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white dark:bg-white dark:text-black">
           검색
         </button>
       </form>
