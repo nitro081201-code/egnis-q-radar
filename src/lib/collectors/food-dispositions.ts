@@ -106,7 +106,9 @@ function parseRow(raw: RawRow): CollectedRow | null {
     risk_level: level,
 
     source_type: "api_mfds",
-    source_url: "https://www.foodsafetykorea.go.kr/api/openApiInfo.do?svc_no=I0470",
+    // 레코드별 딥링크를 제공하는 필드가 API 응답에 없어, 식약처 공개 행정처분 목록
+    // 페이지로 연결한다 (이전엔 실수로 개발자용 API 문서 페이지를 넣었었음).
+    source_url: "https://www.foodsafetykorea.go.kr/portal/fooddanger/administMeasureList.do?menu_no=2714",
     sanitized_raw_data: {
       // allowlist만 — PRSDNT_NM(대표자명), TEL_NO(전화번호), ADDR 원문은 절대 포함하지 않는다.
       DSPSDTLS_SEQ: raw.DSPSDTLS_SEQ,

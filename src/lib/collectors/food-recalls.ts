@@ -96,7 +96,10 @@ function parseRow(raw: RawRow): CollectedRow | null {
     risk_level: level,
 
     source_type: "api_mfds",
-    source_url: "https://www.data.go.kr/data/15074318/openapi.do",
+    // 레코드별 딥링크를 제공하는 필드가 API 응답에 없어, 식약처 공개 회수·판매중지
+    // 목록 페이지로 연결한다 (이전엔 실수로 개발자용 API 문서 페이지를 넣었었음).
+    source_url:
+      "https://www.foodsafetykorea.go.kr/portal/fooddanger/suspension.do?menu_no=2713&menu_grp=MENU_NEW02",
     sanitized_raw_data: {
       // allowlist만 — TELNO(전화번호), ADDR 원문, LCNS_NO(인허가번호 원문)는 절대 포함하지 않는다.
       // recalls 테이블에는 인허가번호 컬럼 자체가 없어 마스킹 저장도 하지 않는다.
