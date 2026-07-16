@@ -70,10 +70,11 @@ export default async function BoardPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_active")
+    .select("is_active, role")
     .eq("id", user.id)
     .single();
   if (!profile?.is_active) redirect("/login?error=계정이 아직 활성화되지 않았습니다");
+  const isAdmin = profile.role === "admin";
 
   const [dispositionsResult, recallsResult, lastRunResult] = await Promise.all([
     type === "recall"
@@ -126,10 +127,22 @@ export default async function BoardPage({
     <main className="mx-auto max-w-5xl p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">EGNIS Q-Radar</h1>
-        <div className="text-xs text-gray-500">
-          {lastRun
-            ? `최근 동기화: ${new Date(lastRun.finished_at ?? "").toLocaleString("ko-KR")} · ${lastRun.status === "success" ? "정상" : lastRun.status === "failed" ? "실패" : "진행중"}`
-            : "아직 수집 이력 없음"}
+        <div className="flex items-center gap-4 text-xs text-gray-500">
+          {isAdmin && (
+            <>
+              <a href="/admin/users" className="underline">
+                사용자 관리
+              </a>
+              <a href="/admin/quarantine" className="underline">
+                검수대상 현황
+              </a>
+            </>
+          )}
+          <span>
+            {lastRun
+              ? `최근 동기화: ${new Date(lastRun.finished_at ?? "").toLocaleString("ko-KR")} · ${lastRun.status === "success" ? "정상" : lastRun.status === "failed" ? "실패" : "진행중"}`
+              : "아직 수집 이력 없음"}
+          </span>
         </div>
       </div>
 
