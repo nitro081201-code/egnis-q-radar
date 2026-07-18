@@ -8,6 +8,9 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // 로그인 이메일을 요청한 기기와 링크를 클릭하는 기기가 다른 경우가 흔해
+      // PKCE(코드 검증 쿠키 필요) 대신 implicit 플로우를 사용한다.
+      auth: { flowType: "implicit" },
       cookies: {
         getAll() {
           return cookieStore.getAll();
