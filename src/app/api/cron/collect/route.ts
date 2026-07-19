@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createFoodDispositionsCollector } from "@/lib/collectors/food-dispositions";
 import { createFoodRecallsCollector } from "@/lib/collectors/food-recalls";
+import { createCosmeticDispositionsCollector } from "@/lib/collectors/cosmetic-dispositions";
 import { runCollector } from "@/lib/collectors/run";
 import type { Collector } from "@/lib/collectors/types";
 
@@ -15,6 +16,9 @@ function buildCollectors(): Collector[] {
     collectors.push(createFoodDispositionsCollector(foodsafetyKoreaKey));
     collectors.push(createFoodRecallsCollector(foodsafetyKoreaKey));
   }
+
+  // 화장품 행정처분은 공개 목록 크롤링이라 API 키가 필요 없다(식품안전나라엔 화장품 없음).
+  collectors.push(createCosmeticDispositionsCollector());
 
   return collectors;
 }
