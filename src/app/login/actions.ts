@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
 const ALLOWED_DOMAIN = "egnis.kr";
-const ALLOWED_EMAILS = ["nitro081201@gmail.com", "venosis0812@gmail.com"];
+// 도메인(@egnis.kr) 외에 추가로 허용할 이메일은 환경변수로 관리한다.
+// 개인 계정을 코드에 하드코딩하지 않는다. (예: LOGIN_ALLOWED_EMAILS="a@x.com,b@y.com")
+const ALLOWED_EMAILS = (process.env.LOGIN_ALLOWED_EMAILS ?? "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 function isAllowedEmail(email: string) {
   const normalized = email.toLowerCase();
