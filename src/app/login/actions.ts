@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { isMagicLinkEnabled } from "@/lib/auth-config";
 
 const ALLOWED_DOMAIN = "egnis.kr";
 // 도메인(@egnis.kr) 외에 추가로 허용할 이메일은 환경변수로 관리한다.
@@ -21,6 +22,13 @@ function isAllowedEmail(email: string) {
 }
 
 export async function login(formData: FormData) {
+  // 매직링크가 꺼져 있으면 폼이 렌더되지 않지만, 액션이 직접 호출되는 경우도 막는다.
+  if (!isMagicLinkEnabled()) {
+    redirect(
+      `/login?error=${encodeURIComponent("이메일 로그인은 현재 사용하지 않습니다")}`,
+    );
+  }
+
   const email = (formData.get("email") as string | null)?.trim();
   if (!email) {
     redirect("/login?error=이메일을 입력하세요");
