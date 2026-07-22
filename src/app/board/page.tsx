@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isVibeGateOnly } from "@/lib/auth-config";
 import PageSizeSelect from "./page-size-select";
 import { signOut } from "./actions";
 
@@ -101,19 +102,26 @@ export default async function BoardPage({
 
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // vibe 게이트 전용 모드: 게이트가 이미 사내 인원임을 보장하므로 앱 로그인을 요구하지 않는다.
+  // 세션이 없어 역할을 알 수 없으므로 관리자 기능은 노출하지 않는다(§auth-config).
+  const gateOnly = isVibeGateOnly();
+  let isAdmin = false;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_active, role")
-    .eq("id", user.id)
-    .single();
-  if (!profile?.is_active)
-    redirect("/login?error=계정이 아직 활성화되지 않았습니다");
-  const isAdmin = profile.role === "admin";
+  if (!gateOnly) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_active, role")
+      .eq("id", user.id)
+      .single();
+    if (!profile?.is_active)
+      redirect("/login?error=계정이 아직 활성화되지 않았습니다");
+    isAdmin = profile.role === "admin";
+  }
 
   const includeDispositions = type !== "recall";
   const includeRecalls = type !== "disposition";
@@ -302,14 +310,17 @@ export default async function BoardPage({
               ? `최근 동기화: ${new Date(lastSuccess.finished_at).toLocaleString("ko-KR")} · 정상`
               : "아직 수집 이력 없음"}
           </span>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded border border-gray-400 px-2 py-0.5 text-gray-600 hover:bg-gray-100"
-            >
-              로그아웃
-            </button>
-          </form>
+          {/* 게이트 전용 모드에는 앱 세션이 없으므로 로그아웃도 의미가 없다 */}
+          {!gateOnly && (
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="rounded border border-gray-400 px-2 py-0.5 text-gray-600 hover:bg-gray-100"
+              >
+                로그아웃
+              </button>
+            </form>
+          )}
         </div>
       </div>
 

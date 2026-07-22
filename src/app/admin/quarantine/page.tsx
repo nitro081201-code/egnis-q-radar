@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isVibeGateOnly } from "@/lib/auth-config";
 
 const CONTENT_TABLES = ["dispositions", "recalls", "regulations"] as const;
 const QUARANTINE_STATUSES = ["quarantined", "unverified"];
@@ -11,6 +12,9 @@ const TABLE_LABEL: Record<(typeof CONTENT_TABLES)[number], string> = {
 };
 
 export default async function QuarantinePage() {
+  // 게이트 전용 모드에는 앱 세션이 없어 관리자 여부를 검증할 수 없다 → 페이지 자체를 숨긴다.
+  if (isVibeGateOnly()) notFound();
+
   const supabase = await createClient();
 
   const {

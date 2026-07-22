@@ -1,5 +1,10 @@
+import { redirect } from "next/navigation";
 import { login } from "./actions";
-import { isGoogleLoginEnabled, isMagicLinkEnabled } from "@/lib/auth-config";
+import {
+  isGoogleLoginEnabled,
+  isMagicLinkEnabled,
+  isVibeGateOnly,
+} from "@/lib/auth-config";
 import GoogleLoginButton from "./google-button";
 
 export default async function LoginPage({
@@ -7,6 +12,9 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string; sent?: string }>;
 }) {
+  // 게이트 전용 모드에는 로그인 개념이 없으므로 board로 돌려보낸다.
+  if (isVibeGateOnly()) redirect("/board");
+
   const { error, sent } = await searchParams;
   const googleEnabled = isGoogleLoginEnabled();
   const magicLinkEnabled = isMagicLinkEnabled();
